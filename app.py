@@ -93,11 +93,12 @@ async def remove_user(req: Request, authed: bool = Depends(admin_auth)):
     save_users(users)
     return {"status": "ok", "message": "User removed"}
 
-# =============== Static Admin Panel (Safe Mount) ===============
+# =============== Static Admin Panel (Safe Mount + Log) ===============
 
 if os.path.exists("admin"):
+    files = os.listdir("admin")
+    print(f"✅ Folder 'admin' ditemukan ({len(files)} file): {', '.join(files)}")
     app.mount("/admin", StaticFiles(directory="admin", html=True), name="admin")
-    print("✅ Folder 'admin' ditemukan — Admin Panel aktif di /admin/")
 else:
     print("⚠️ Folder 'admin' tidak ditemukan — Admin Panel tidak dilayani.")
 
