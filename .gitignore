@@ -1,0 +1,56 @@
+# ===============================
+# .gitignore untuk Railway FastAPI Project
+# ===============================
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+*.db
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VSCode / IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Build & packaging
+build/
+dist/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+
+# Node/npm cache (jika pakai Railway CLI)
+node_modules/
+npm-debug.log*
+
+# OS temp
+*.bak
+*.tmp
+*.swp
+
+# ===============================
+# Allowed folders (WAJIB ikut Git)
+# ===============================
+!admin/
+!admin/index.html
+!admin/admin.js
+!users.json
+!app.py
+!requirements.txt
+!README.md
+!.env.example
