@@ -3,7 +3,7 @@ import json
 import hashlib
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Dict
@@ -105,17 +105,28 @@ async def remove_user(req: Request, authed: bool = Depends(admin_auth)):
     save_users(users)
     return {"status": "ok", "message": "User removed"}
 
-# =============== Static Admin Panel ===============
+# =============== Static Admin Panel (Absolute Path + Fallback) ===============
 
-if os.path.exists("admin"):
-    files = os.listdir("admin")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ADMIN_DIR = os.path.join(BASE_DIR, "admin")
+
+if os.path.exists(ADMIN_DIR):
+    files = os.listdir(ADMIN_DIR)
     print(f"✅ Folder 'admin' ditemukan ({len(files)} file): {', '.join(files)}")
-    app.mount("/admin", StaticFiles(directory="admin", html=True), name="admin")
 
-    # ✅ Fallback agar /admin otomatis tampil index.html
+    # Serve static files from absolute path
+    app.mount("/admin", StaticFiles(directory=ADMIN_DIR, html=True), name="admin")
+
+    # ✅ Redirect /admin → /admin/
     @app.get("/admin", include_in_schema=False)
+    async def admin_redirect():
+        return RedirectResponse(url="/admin/")
+
+    # ✅ Serve index.html at /admin/
+    @app.get("/admin/", include_in_schema=False)
     async def admin_root():
-        return FileResponse(os.path.join("admin", "index.html"))
+        return FileResponse(os.path.join(ADMIN_DIR, "index.html"))
+
 else:
     print("⚠️ Folder 'admin' tidak ditemukan — Admin Panel tidak dilayani.")
 
