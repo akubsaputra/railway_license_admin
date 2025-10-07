@@ -1,4 +1,3 @@
-f886b0369e20258d1bd0e379e5edca5ed2b74a88
 import os
 import json
 import hashlib
@@ -7,12 +6,15 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Dict
+from fastapi.staticfiles import StaticFiles
 
 DB_FILE = os.getenv("DB_FILE", "users.json")
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "changeme-admin-token")
 
 app = FastAPI(title="License Server - ScrapUserAgent")
 security = HTTPBearer()
+
+# =============== Helper ===============
 
 def load_users() -> Dict:
     if os.path.exists(DB_FILE):
@@ -30,6 +32,8 @@ def save_users(data: Dict):
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode("utf-8")).hexdigest()
 
+# =============== Models ===============
+
 class LoginReq(BaseModel):
     username: str
     password: str
@@ -39,6 +43,8 @@ class AddUserReq(BaseModel):
     username: str
     password: str
     device: str = ""
+
+# =============== Public API ===============
 
 @app.post("/login")
 async def login(req: LoginReq):
@@ -52,6 +58,8 @@ async def login(req: LoginReq):
     users[req.username] = u
     save_users(users)
     return {"status": "ok", "message": "Login success"}
+
+# =============== Admin Auth ===============
 
 def admin_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
@@ -85,8 +93,7 @@ async def remove_user(req: Request, authed: bool = Depends(admin_auth)):
     save_users(users)
     return {"status": "ok", "message": "User removed"}
 
-from fastapi.staticfiles import StaticFiles
-import os
+# =============== Static Admin Panel (Safe Mount) ===============
 
 if os.path.exists("admin"):
     app.mount("/admin", StaticFiles(directory="admin", html=True), name="admin")
@@ -94,6 +101,7 @@ if os.path.exists("admin"):
 else:
     print("⚠️ Folder 'admin' tidak ditemukan — Admin Panel tidak dilayani.")
 
+# =============== Health Check ===============
 
 @app.get("/health")
 async def health():
