@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> f886b0369e20258d1bd0e379e5edca5ed2b74a88
 import os
 import json
 import hashlib
@@ -83,6 +87,11 @@ async def remove_user(req: Request, authed: bool = Depends(admin_auth)):
     users.pop(username)
     save_users(users)
     return {"status": "ok", "message": "User removed"}
+<<<<<<< HEAD
+=======
+from fastapi.staticfiles import StaticFiles
+app.mount("/admin", StaticFiles(directory="admin", html=True), name="admin")
+>>>>>>> f886b0369e20258d1bd0e379e5edca5ed2b74a88
 
 @app.get("/health")
 async def health():
