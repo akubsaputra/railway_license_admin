@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> f886b0369e20258d1bd0e379e5edca5ed2b74a88
+f886b0369e20258d1bd0e379e5edca5ed2b74a88
 import os
 import json
 import hashlib
