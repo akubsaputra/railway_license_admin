@@ -136,3 +136,12 @@ else:
 async def health():
     """Cek status server."""
     return {"status": "ok"}
+# =============== Debug Files (sementara) ===============
+@app.get("/debug/files")
+async def debug_files():
+    base_dir = os.getcwd()
+    tree = []
+    for root, dirs, files in os.walk(base_dir):
+        for f in files:
+            tree.append(os.path.relpath(os.path.join(root, f), base_dir))
+    return {"cwd": base_dir, "files": tree[:200]}  # limit 200 file
