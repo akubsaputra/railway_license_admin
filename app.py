@@ -92,6 +92,15 @@ async def remove_user(req: Request, authed: bool = Depends(admin_auth)):
 from fastapi.staticfiles import StaticFiles
 app.mount("/admin", StaticFiles(directory="admin", html=True), name="admin")
 >>>>>>> f886b0369e20258d1bd0e379e5edca5ed2b74a88
+from fastapi.staticfiles import StaticFiles
+import os
+
+# ✅ Aman: hanya mount kalau folder 'admin' benar-benar ada
+if os.path.exists("admin"):
+    app.mount("/admin", StaticFiles(directory="admin", html=True), name="admin")
+    print("✅ Folder 'admin' ditemukan — Admin Panel aktif di /admin/")
+else:
+    print("⚠️ Folder 'admin' tidak ditemukan — Admin Panel tidak dilayani.")
 
 @app.get("/health")
 async def health():
