@@ -3,33 +3,38 @@ import json
 import hashlib
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Dict
-from fastapi.staticfiles import StaticFiles
 
+# =============== Config ===============
 DB_FILE = os.getenv("DB_FILE", "users.json")
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "changeme-admin-token")
 
 app = FastAPI(title="License Server - ScrapUserAgent")
 security = HTTPBearer()
 
-# =============== Helper ===============
+# =============== Helper Functions ===============
 
 def load_users() -> Dict:
+    """Load user data from JSON file."""
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
+        except Exception as e:
+            print(f"⚠️ Gagal load users.json: {e}")
             return {}
     return {}
 
 def save_users(data: Dict):
+    """Save user data to JSON file."""
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 def hash_pw(pw: str) -> str:
+    """SHA-256 password hashing."""
     return hashlib.sha256(pw.encode("utf-8")).hexdigest()
 
 # =============== Models ===============
@@ -48,31 +53,37 @@ class AddUserReq(BaseModel):
 
 @app.post("/login")
 async def login(req: LoginReq):
+    """Endpoint untuk user login."""
     users = load_users()
     u = users.get(req.username)
-    if not u:
+    if not u or u.get("password") != hash_pw(req.password):
         return JSONResponse({"status": "fail", "message": "Invalid login"}, status_code=401)
-    if u.get("password") != hash_pw(req.password):
-        return JSONResponse({"status": "fail", "message": "Invalid login"}, status_code=401)
+
+    # Update device info
     u["device"] = req.device
     users[req.username] = u
     save_users(users)
     return {"status": "ok", "message": "Login success"}
 
-# =============== Admin Auth ===============
+# =============== Admin Authentication ===============
 
 def admin_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Simple token-based admin auth."""
     token = credentials.credentials
     if token != ADMIN_TOKEN:
         raise HTTPException(status_code=401, detail="Invalid admin token")
     return True
 
+# =============== Admin API ===============
+
 @app.get("/admin/users")
 async def list_users(authed: bool = Depends(admin_auth)):
+    """List all users."""
     return load_users()
 
 @app.post("/admin/add")
 async def add_user(req: AddUserReq, authed: bool = Depends(admin_auth)):
+    """Add new user."""
     users = load_users()
     if req.username in users:
         return JSONResponse({"status": "fail", "message": "User exists"}, status_code=400)
@@ -82,6 +93,7 @@ async def add_user(req: AddUserReq, authed: bool = Depends(admin_auth)):
 
 @app.post("/admin/remove")
 async def remove_user(req: Request, authed: bool = Depends(admin_auth)):
+    """Remove user."""
     body = await req.json()
     username = body.get("username")
     if not username:
@@ -93,12 +105,17 @@ async def remove_user(req: Request, authed: bool = Depends(admin_auth)):
     save_users(users)
     return {"status": "ok", "message": "User removed"}
 
-# =============== Static Admin Panel (Safe Mount + Log) ===============
+# =============== Static Admin Panel ===============
 
 if os.path.exists("admin"):
     files = os.listdir("admin")
     print(f"✅ Folder 'admin' ditemukan ({len(files)} file): {', '.join(files)}")
     app.mount("/admin", StaticFiles(directory="admin", html=True), name="admin")
+
+    # ✅ Fallback agar /admin otomatis tampil index.html
+    @app.get("/admin", include_in_schema=False)
+    async def admin_root():
+        return FileResponse(os.path.join("admin", "index.html"))
 else:
     print("⚠️ Folder 'admin' tidak ditemukan — Admin Panel tidak dilayani.")
 
@@ -106,4 +123,5 @@ else:
 
 @app.get("/health")
 async def health():
+    """Cek status server."""
     return {"status": "ok"}
